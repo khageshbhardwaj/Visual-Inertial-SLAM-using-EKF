@@ -62,7 +62,7 @@ def visualize_trajectory_2d(pose,path_name="Unknown",show_ori=False):
         dy = np.sin(yaw_list)
         dx,dy = [dx,dy]/np.sqrt(dx**2+dy**2)
         ax.quiver(pose[0,3,select_ori_index],pose[1,3,select_ori_index],dx,dy,\
-            color="b",units="xy",width=1)
+            color="g",units="xy",width=0.5)
     
     ax.set_xlabel('x')
     ax.set_ylabel('y')
@@ -220,6 +220,109 @@ def pose2adpose(T):
   return calT
 
 
+def calculate_timestamps(abs_timestamps):
+    # Ensure the input array is not empty
+    if len(abs_timestamps) == 0:
+        return []
+
+    inc_timestamps = abs_timestamps - abs_timestamps[0]
+
+    return inc_timestamps
+
+def skew_symmetric(vector):
+    """
+    Compute the skew-symmetric matrix of a 3x1 vector.
+    """
+    return np.array([[0, -vector[2], vector[1]],
+                     [vector[2], 0, -vector[0]],
+                     [-vector[1], vector[0], 0]])
+
+def column2se3(zeta):
+    """
+    Convert each column of the zeta vector to a 4x4 twist matrix.
+    """
+    num_columns = zeta.shape[1]
+    twist_matrices = []
+
+    for i in range(num_columns):
+        # Extract linear and angular velocity components
+        v = zeta[:3, i]
+        w = zeta[3:, i]
+
+        # Compute skew-symmetric matrix for angular velocity
+        omega_hat = skew_symmetric(w)
+
+        # Construct the twist matrix
+        twist_matrix = np.zeros((4, 4))
+        twist_matrix[:3, :3] = omega_hat
+        twist_matrix[:3, 3] = v
+        twist_matrices.append(twist_matrix)
+
+    return np.stack(twist_matrices, axis=0)
+
+def extract_sigma(sigma,visible_features):
+    A = visible_features
+    # Create an empty matrix to store the smaller blocks
+    sigma_t = np.zeros((len(A) * 3, len(A) * 3))
+
+    # Extract the smaller blocks and fill them with values from the random matrix
+    for i, row_index in enumerate(A):
+        for j, col_index in enumerate(A):
+            # Extract the block from the random matrix and assign it to the corresponding block in the smaller matrix
+            sigma_t[i * 3: (i + 1) * 3 , j * 3: (j + 1) * 3] = sigma[row_index*3:(row_index+1)*3, col_index*3:(col_index+1)*3]
+
+    return sigma_t
+
+def extract_sigma_LR(sigma_LR, visible_features):
+    A = visible_features
+    # Create an empty matrix to store the extracted rows
+    sigma_t = np.zeros((len(A) * 3, 6))
+
+    # Iterate over each visible feature index
+    for i, index in enumerate(A):
+        # Extract the rows corresponding to the visible feature index
+        sigma_t[i * 3: (i + 1) * 3 , :] = sigma_LR[index*3:(index+1)*3, :]
+
+    return sigma_t
+
+def extract_sigma_RL(sigma_RL, visible_features):
+    A = visible_features
+    # Create an empty matrix to store the extracted rows
+    sigma_t = np.zeros((6, len(A) * 3,))
+
+    # Iterate over each visible feature index
+    for i, index in enumerate(A):
+        # Extract the rows corresponding to the visible feature index
+        sigma_t[:, i * 3: (i + 1) * 3] = sigma_RL[:, index*3:(index+1)*3]
+
+    return sigma_t
+
+
+def plug_back_sigma(sigma, sigma_t, visible_features):
+    # Iterate over the visible features and their corresponding indices
+    for i, row_index in enumerate(visible_features):
+        for j, col_index in enumerate(visible_features):
+            # Plug back the modified block into the original sigma matrix
+            sigma[row_index*3:(row_index+1)*3, col_index*3:(col_index+1)*3] = sigma_t[i * 3: (i + 1) * 3, j * 3: (j + 1) * 3]
+    
+    return sigma
+
+def dotoperation(x):
+    A = np.zeros(x.shape+(6,))
+
+    A[...,0,0] = 1
+    A[...,1,1] = 1
+    A[...,2,2] = 1
+    
+    A[...,0,4] = -x[...,2]
+    A[...,0,5] = x[...,1]
+    A[...,1,5] = -x[...,0]
+
+    A[...,1,3] = x[...,2]
+    A[...,2,3] = -x[...,1]
+    A[...,2,4] = x[...,0]
+    
+    return A
 
 
 
