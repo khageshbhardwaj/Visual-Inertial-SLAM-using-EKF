@@ -28,12 +28,12 @@ b. Keep the code in the code folder or provide the appropriate path to access th
 c. Change the dataset number to access another dataset.
 
 # Dependencies
-***for main.py
+***for main.py:
 import numpy as np
 from tqdm import tqdm
 from pr3_utils import *
 
-***for pr3_utils.py
+***for pr3_utils.py:
 import numpy as np
 import matplotlib.pyplot as plt
 from transforms3d.euler import mat2euler
