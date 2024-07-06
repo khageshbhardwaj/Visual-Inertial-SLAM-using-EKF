@@ -3,9 +3,6 @@ The project entails developing a Visual-Inertial SLAM algorithm by integrating I
 from stereo-camera images.
 It comprises three main parts.
 
-Project Description: https://drive.google.com/file/d/1dwGYWkjS6Tm9KZfhfIMY-vru9jwgw431/view?usp=sharing
-Data: https://drive.google.com/drive/folders/1xBpuDP9Ee_nHvVB7zLbqkfuq4LWW3Ffj?usp=sharing
-
 # Part a
 Implementing an EKF prediction step using IMU measurements to estimate the IMU's pose over time. This part of the program 
 generates a plot for an estimated pose trajectory over time.
